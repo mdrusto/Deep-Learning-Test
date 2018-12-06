@@ -20,4 +20,12 @@ public class NetworkGradient {
 	public BiasVector getBiasVectorAdjustments(int index) {
 		return biasVectorAdjustments[index];
 	}
+	
+	public void add(NetworkGradient addend) {
+		
+	}
+	
+	public void divideBy(double divisor) {
+		
+	}
 }

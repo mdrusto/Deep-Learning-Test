@@ -15,15 +15,12 @@ public class WeightMatrix {
 		}
 	}
 	
-	public void initialize(double[][] values) {
+	public void initialize(int row, int column, double value) {
 		if (isInitialized)
 			throw new UnsupportedOperationException("Matrix has already been initialized");
 		isInitialized = true;
-		if (values.length != rows.length)
-			throw new IllegalArgumentException(String.format("Expected %s, got %s", rows.length, values.length));
-		for (int y = 0; y < values.length; y++) {
-			rows[y].initialize(values[y]);
-		}
+		rows[row].initialize(column, value);
+		
 	}
 	
 	public double getValue(int row, int column) {
@@ -47,10 +44,8 @@ public class WeightMatrix {
 			weights = new double[length];
 		}
 		
-		private void initialize(double[] values) {
-			for (int x = 0; x < weights.length; x++) {
-				weights[x] = values[x];
-			}
+		private void initialize(int column, double value) {
+			weights[column] = value;
 		}
 		
 		private double getValue(int index) {

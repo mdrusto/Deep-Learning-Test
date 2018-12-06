@@ -1,5 +1,7 @@
 package deeplearning;
 
+import java.util.Random;
+
 import deeplearning.training.NetworkGradient;
 
 public class NeuralNetwork {
@@ -9,12 +11,32 @@ public class NeuralNetwork {
 	private LayerLink[] links;
 	
 	public NeuralNetwork(NetworkSize size) {
-		layers = new Layer[size.getLayerCount() + 2];
+		layers = new Layer[size.getLayerCount()];
 		layers[0] = new InputLayer(784);
 		layers[size.getLayerCount() + 1] = new OutputLayer(10);
 		for (int n = 1; n < size.getLayerCount() + 1; n++) {
 			layers[n] = new InternalLayer(size.getLayerLength(n));
 			links[n] = new LayerLink(layers[n - 1].getNeuronCount(), layers[n].getNeuronCount());
+		}
+	}
+	
+	public void initializeNetwork(Random rand, double initializationBound) {
+		int lastLayerNeuronCount = 0;
+		for (int n = 0; n < layers.length; n++) {
+			int neuronCount = layers[n].getNeuronCount();
+			WeightMatrix weightMatrix = new WeightMatrix(neuronCount, lastLayerNeuronCount);
+			BiasVector biasVector = new BiasVector(neuronCount);
+			for (int rowCounter = 0; rowCounter < neuronCount; rowCounter++) {
+				for (int columnCounter = 0; columnCounter < lastLayerNeuronCount; columnCounter++) {
+					double initialValue = (rand.nextDouble() - 0.5) * initializationBound * 2;
+					weightMatrix.initialize(rowCounter, columnCounter, initialValue);
+				}
+				double initialValue = (rand.nextDouble() - 0.5) * initializationBound * 2;
+				biasVector.initialize(rowCounter, initialValue);
+			}
+			lastLayerNeuronCount = neuronCount;
+			
+			links[n].initialize(weightMatrix, biasVector);
 		}
 	}
 	

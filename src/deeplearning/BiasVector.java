@@ -10,15 +10,11 @@ public class BiasVector {
 		biases = new double[length];
 	}
 	
-	public void initialize(double[] values) {
+	public void initialize(int row, double value) {
 		if (isInitialized)
 			throw new UnsupportedOperationException("Vector has already been initialized");
 		isInitialized = true;
-		if (values.length != biases.length)
-			throw new IllegalArgumentException(String.format("Expected %s, got %s", biases.length, values.length));
-		for (int x = 0; x < biases.length; x++) {
-			biases[x] = values[x];
-		}
+		biases[row] = value;
 	}
 	
 	public double getValue(int index) {

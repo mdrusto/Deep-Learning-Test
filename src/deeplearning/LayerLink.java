@@ -15,6 +15,11 @@ public class LayerLink {
 		biases = new BiasVector(outputLength);
 	}
 	
+	public void initialize(WeightMatrix weights, BiasVector biases) {
+		this.weights = weights;
+		this.biases = biases;
+	}
+	
 	public double[] getOutput(double[] input) {
 		if (input.length != inputLength)
 			throw new IllegalArgumentException(String.format("Expected %s, got %s", inputLength, input.length));

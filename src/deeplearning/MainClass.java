@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.util.Random;
 import java.util.Scanner;
 
+import deeplearning.training.NetworkGradient;
+
 public class MainClass {
 
 	/* SETTINGS */
@@ -46,7 +48,7 @@ public class MainClass {
 
 		long startTime = System.currentTimeMillis();
 		System.out.print("Initializing weights and biases with random values...");
-		initializeNetwork();
+		//init
 		System.out.println("\t[Done in " + (System.currentTimeMillis() - startTime) + "ms]");
 
 		System.out.print("Training network...");
@@ -58,45 +60,12 @@ public class MainClass {
 
 	}
 
-	/* Initialize weights and biases with random values */
-	private static void initializeNetwork() {
-		Random rand = new Random();
-		int lastLayerNeuronCount = 0;
-		for (int n = 0; n < layers.length; n++) {
-			int neuronCount = layers[n].getNeuronCount();
-			double[][] weights = new double[neuronCount][lastLayerNeuronCount];
-			double[] biases = new double[neuronCount];
-			for (int x = 0; x < neuronCount; x++) {
-				for (int y = 0; y < lastLayerNeuronCount; y++) {
-					weights[x][y] = (rand.nextDouble() - 0.5) * INITIALIZATION_BOUND * 2;
-				}
-				biases[x] = (rand.nextDouble() - 0.5) * INITIALIZATION_BOUND * 2;
-			}
-			lastLayerNeuronCount = neuronCount;
-
-			layers[n].setWeights(weights);
-			layers[n].setBiases(biases);
-		}
-	}
-
-	private static void trainNetwork() {
+	private static void trainNetwork(NeuralNetwork network) {
 		double networkError = 1000, previousNetworkError = 100000;
 		int successiveSuccessfulErrorChecks = 0;
-		for (int n = 0; successiveSuccessfulErrorChecks < SUCCESSIVE_DELTA_ERROR_CHECKS; n++) {
+		while(successiveSuccessfulErrorChecks < SUCCESSIVE_DELTA_ERROR_CHECKS) {
 			//System.out.println(networkError);
 			// Each iteration is one gradient step
-
-			double[][][] finalWeightAdjustments = new double[layers.length][][];
-			double[][] finalBiasAdjustments = new double[layers.length][];
-
-			// Initialize the arrays
-			for (int counter = 0; counter < layers.length; counter++) {
-				double[][] weights = layers[counter].getWeights();
-				double[] biases = layers[counter].getBiases();
-
-				finalWeightAdjustments[counter] = new double[weights.length][weights[0].length];
-				finalBiasAdjustments[counter] = new double[biases.length];
-			}
 
 			int[] randomTrainingDataIndices = new int[TRAINING_BATCH_SIZE];
 			Random rng = new Random();
@@ -111,72 +80,32 @@ public class MainClass {
 					randomTrainingDataIndices[successfulIndexCount++] = selected;
 
 			} while (successfulIndexCount < TRAINING_BATCH_SIZE);
-
+			
+			NetworkGradient averageGradient = null;
+			
 			for (int x = 0; x < TRAINING_BATCH_SIZE; x++) {
 				// Calculate network gradient for each image
 
 				DigitImage image = images[randomTrainingDataIndices[x]];
 				byte correctOutput = image.getLabel();
-				double[] networkOutput = runNetwork(image.flatten());
+				
+				double[] networkInput = image.flatten();
+				
+				NetworkResult result = network.runNetwork(networkInput);
+				NetworkGradient gradient = result.getGradient(correctOutput);
+				if (averageGradient == null)
+					averageGradient = gradient;
+				else
+					averageGradient.add(gradient);
+				
 				previousNetworkError = networkError;
-				networkError = calculateError(networkOutput, correctOutput);
-
-				double[] previousActivationDerivatives = new double[networkOutput.length]; // del C / del a
-
-				for (int i = 0; i < networkOutput.length; i++) {
-					previousActivationDerivatives[i] = networkOutput[i] - (correctOutput == i ? 1 : 0);
-				}
-
-				for (int layerCounter = layers.length - 1; layerCounter >= 1; layerCounter--) { // Backpropagation
-					Layer currentLayer = layers[layerCounter];
-					Layer lastLayer = layerCounter == layers.length - 1 ? null : layers[layerCounter + 1];
-
-					// Compute weight derivatives
-					if (layerCounter != layers.length - 1) {
-						for (int i = 0; i < currentLayer.getNeuronCount(); i++) {
-							for (int j = 0; j < lastLayer.getNeuronCount(); j++) {
-								finalWeightAdjustments[layerCounter][j][i] = currentLayer.getActivations()[j]
-										* SigmoidFunction.getDerivative(currentLayer.getZValues()[j])
-										* previousActivationDerivatives[i]; // Chain rule
-							}
-						}
-					}
-
-					// Compute bias derivatives
-					for (int i = 0; i < currentLayer.getNeuronCount(); i++) {
-						finalBiasAdjustments[layerCounter][i] = SigmoidFunction
-								.getDerivative(currentLayer.getZValues()[i]) * previousActivationDerivatives[i]; // ChainRule
-					}
-
-					// Calculate this layer's activation derivatives for next layer
-					if (layerCounter > 1 && layerCounter < layers.length - 1) { // Input has no weights/biases
-						double[] temp = new double[currentLayer.getNeuronCount()]; // For new acti derivs
-
-						for (int m = 0; m < currentLayer.getNeuronCount(); m++) {
-							for (int i = 0; i < previousActivationDerivatives.length; i++) {
-								temp[m] += lastLayer.getWeights()[m][i]
-										* SigmoidFunction.getDerivative(lastLayer.getZValues()[i])
-										* previousActivationDerivatives[i]; // Chain rule
-							}
-						}
-						previousActivationDerivatives = temp;
-					}
-				} // TODO: It ain't working properly
+				networkError = calculateError(result.getOutput(), correctOutput);
+				
 			}
 
 			// Adjust network weights & biases
-			for (int counter = 1; counter < layers.length - 1; counter++) {
-				for (int x = 0; x < layers[counter].getNeuronCount(); x++) {
-					for (int y = 0; y < layers[counter + 1].getNeuronCount(); y++) {
-						layers[n].adjustWeight(x, y,
-								-GRADIENT_MULTIPLIER * finalWeightAdjustments[counter][x][y] / TRAINING_BATCH_SIZE);
-						// Average over batch
-					}
-					layers[n].adjustBias(x,
-							-GRADIENT_MULTIPLIER * finalBiasAdjustments[counter][x] / TRAINING_BATCH_SIZE);
-				}
-
-			}
+			network.adjustNetwork(averageGradient, GRADIENT_MULTIPLIER);
+			
 			if (previousNetworkError - networkError < DELTA_ERROR_LIMIT)
 				successiveSuccessfulErrorChecks++;
 			else

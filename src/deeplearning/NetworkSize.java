@@ -26,4 +26,8 @@ public class NetworkSize {
 		else
 			return internalLayerLengths[layer - 1];
 	}
+	
+	public int getLayerCount() {
+		return networkLength;
+	}
 }
