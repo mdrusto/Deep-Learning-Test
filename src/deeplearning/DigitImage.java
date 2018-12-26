@@ -25,4 +25,18 @@ public class DigitImage {
 	public byte getLabel() {
 		return label;
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof DigitImage))
+			return false;
+		DigitImage digit = (DigitImage) o;
+		for (int x = 0; x < contents.length; x++) {
+			for (int y = 0; y < contents[0].length; y++) {
+				if (contents[x][y] != digit.contents[x][y])
+					return false;
+			}
+		}
+		return label == digit.label;
+	}
 }

@@ -1,21 +1,18 @@
 package deeplearning.training;
 
-import deeplearning.WeightMatrix;
-
 public class LayerSnapshot {
 
 	private int size;
 	private double[] activations, zValues;
-	private WeightMatrix weights;
 
-	public LayerSnapshot(double[] activations, double[] zValues, WeightMatrix weights) {
-		if (activations.length != zValues.length)
+	public LayerSnapshot(double[] activations, double[] zValues) {
+		if (zValues != null && activations.length != zValues.length)
 			throw new IllegalArgumentException(
 					String.format("Activations and Z-values array lengths must be equal, got %s and %s",
 							activations.length, zValues.length));
+		this.size = activations.length;
 		this.activations = activations;
 		this.zValues = zValues;
-		this.weights = weights;
 	}
 
 	public int getSize() {
@@ -28,9 +25,5 @@ public class LayerSnapshot {
 
 	public double[] getZValues() {
 		return zValues;
-	}
-	
-	public WeightMatrix getWeights() {
-		return weights;
 	}
 }

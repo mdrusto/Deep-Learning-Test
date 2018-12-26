@@ -2,8 +2,6 @@ package deeplearning;
 
 public class BiasVector {
 	
-	private boolean isInitialized = false;
-	
 	private double[] biases;
 	
 	public BiasVector(int length) {
@@ -11,9 +9,6 @@ public class BiasVector {
 	}
 	
 	public void initialize(int row, double value) {
-		if (isInitialized)
-			throw new UnsupportedOperationException("Vector has already been initialized");
-		isInitialized = true;
 		biases[row] = value;
 	}
 	
@@ -21,9 +16,15 @@ public class BiasVector {
 		return biases[index];
 	}
 	
-	public void add(BiasVector adjustments, double multiplier) {
+	public void subtract(BiasVector adjustments, double multiplier) {
 		for (int y = 0; y < biases.length; y++) {
-			biases[y] += adjustments.getValue(y) * multiplier;
+			biases[y] -= adjustments.getValue(y) * multiplier;
+		}
+	}
+	
+	public void divideBy(double divisor) {
+		for (int y = 0; y < biases.length; y++) {
+			biases[y] = biases[y] / divisor;
 		}
 	}
 }
